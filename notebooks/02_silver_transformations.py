@@ -30,6 +30,7 @@ from delta.tables import DeltaTable
 # COMMAND ----------
 CATALOG_NAME = "cnpj_lakehouse"
 spark.sql(f"USE CATALOG {CATALOG_NAME}")
+spark.sql("USE SCHEMA silver")
 
 # COMMAND ----------
 # MAGIC %md
@@ -38,8 +39,8 @@ spark.sql(f"USE CATALOG {CATALOG_NAME}")
 # COMMAND ----------
 print("[INFO] Processando 'silver_empresas'...")
 
-df_bronze_emp = spark.table("bronze.bronze_empresas")
-df_naturezas = spark.table("bronze.bronze_naturezas_juridicas")
+df_bronze_emp = spark.table(f"{CATALOG_NAME}.bronze.bronze_empresas")
+df_naturezas = spark.table(f"{CATALOG_NAME}.bronze.bronze_naturezas_juridicas")
 
 df_silver_emp = (
     df_bronze_emp
@@ -74,7 +75,7 @@ df_silver_emp = (
 )
 
 # Escrita Delta na Camada Silver com MERGE INTO (Upsert por CNPJ Basico)
-target_table_emp = "silver.silver_empresas"
+target_table_emp = f"{CATALOG_NAME}.silver.silver_empresas"
 
 if not spark.catalog.tableExists(target_table_emp):
     (
@@ -102,9 +103,9 @@ else:
 # COMMAND ----------
 print("[INFO] Processando 'silver_estabelecimentos'...")
 
-df_bronze_est = spark.table("bronze.bronze_estabelecimentos")
-df_cnae = spark.table("bronze.bronze_cnae")
-df_municipios = spark.table("bronze.bronze_municipios")
+df_bronze_est = spark.table(f"{CATALOG_NAME}.bronze.bronze_estabelecimentos")
+df_cnae = spark.table(f"{CATALOG_NAME}.bronze.bronze_cnae")
+df_municipios = spark.table(f"{CATALOG_NAME}.bronze.bronze_municipios")
 
 df_silver_est = (
     df_bronze_est
@@ -163,7 +164,7 @@ df_silver_est = (
 )
 
 # Gravacao com Particionamento por UF para otimizar queries regionais
-target_table_est = "silver.silver_estabelecimentos"
+target_table_est = f"{CATALOG_NAME}.silver.silver_estabelecimentos"
 
 (
     df_silver_est.write
@@ -191,8 +192,8 @@ print("[INFO] Z-ORDER concluido com sucesso.")
 # COMMAND ----------
 print("[INFO] Processando 'silver_socios'...")
 
-df_bronze_soc = spark.table("bronze.bronze_socios")
-df_qualif = spark.table("bronze.bronze_qualificacoes_socios")
+df_bronze_soc = spark.table(f"{CATALOG_NAME}.bronze.bronze_socios")
+df_qualif = spark.table(f"{CATALOG_NAME}.bronze.bronze_qualificacoes_socios")
 
 df_silver_soc = (
     df_bronze_soc
@@ -234,7 +235,7 @@ df_silver_soc = (
     .withColumn("_updated_at", current_timestamp())
 )
 
-target_table_soc = "silver.silver_socios"
+target_table_soc = f"{CATALOG_NAME}.silver.silver_socios"
 (
     df_silver_soc.write
     .format("delta")
@@ -250,13 +251,13 @@ print(f"[INFO] Tabela '{target_table_soc}' gravada com sucesso.")
 # MAGIC ## 4. Validacao das Tabelas Silver
 
 # COMMAND ----------
-display(spark.sql("""
+display(spark.sql(f"""
     SELECT 
-        'silver_empresas' as tabela, count(*) as total_linhas FROM silver.silver_empresas
+        'silver_empresas' as tabela, count(*) as total_linhas FROM {CATALOG_NAME}.silver.silver_empresas
     UNION ALL
     SELECT 
-        'silver_estabelecimentos' as tabela, count(*) as total_linhas FROM silver.silver_estabelecimentos
+        'silver_estabelecimentos' as tabela, count(*) as total_linhas FROM {CATALOG_NAME}.silver.silver_estabelecimentos
     UNION ALL
     SELECT 
-        'silver_socios' as tabela, count(*) as total_linhas FROM silver.silver_socios
+        'silver_socios' as tabela, count(*) as total_linhas FROM {CATALOG_NAME}.silver.silver_socios
 """))
