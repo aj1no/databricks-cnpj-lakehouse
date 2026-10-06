@@ -19,17 +19,14 @@ Objetivo: Configuracao do ambiente, criacao do catalogo, schemas e volumes.
 # MAGIC - Configuracoes recomendadas de Spark para otimizacao de processamento
 
 # COMMAND ----------
-# 1. Configuracoes de Spark para Big Data & Otimizacao Delta Lake
-spark.conf.set("spark.sql.streaming.schemaInference", "true")
+# 1. Configuracoes de Otimizacao Delta Lake & Spark
+# Em clusters com Unity Catalog ou Shared Mode, configuracoes dinamicas sao restritas as propriedades de sessao permitidas:
 spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
 spark.conf.set("spark.databricks.delta.autoCompact.enabled", "true")
 spark.conf.set("spark.databricks.delta.schema.autoMerge.enabled", "true")
-
-# Definir shuffle partitions adequado para o cluster (ajuste conforme o tamanho do cluster)
-# 200 e o default do Spark; para datasets grandes (50M+ linhas), 200 a 400 e uma boa faixa
 spark.conf.set("spark.sql.shuffle.partitions", "200")
 
-print("[INFO] Configuracoes de Spark e Delta Lake aplicadas com sucesso.")
+print("[INFO] Configuracoes de sessao e Delta Lake aplicadas com sucesso.")
 
 # COMMAND ----------
 # 2. Definicao de Variaveis de Governanca (Unity Catalog)
